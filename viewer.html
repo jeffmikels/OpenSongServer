@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="x-ua-compatible" content="ie=edge">
+	<meta name="viewport" content="width=device-width, maximum-scale=1, minimum-scale=1, initial-scale=1, shrink-to-fit=no, user-scalable=no">
+	
+	<!-- ABC -->
+	<!-- <script src="static/abc2svg.js"></script> -->
+	<!-- <script src="static/abcemb.js"></script> -->
+	<!-- <script src="static/verovio-toolkit.js"></script> -->
+	<script src="static/abcjs_midi_5.8.0-min.js"></script>
+	
+	<!-- Vue.js production version, optimized for size and speed -->
+	<script src="static/vue.js"></script>
+	
+	<!-- Axios -->
+	<script src="static/axios.min.js"></script>
+	
+	<!-- Fonts -->
+	<link href="https://fonts.googleapis.com/css?family=Muli:300,400,400i,700,700i,900|Nanum+Gothic+Coding:400,700&display=swap" rel="stylesheet">
+	
+	<title>LCC Worship Chords</title>
+
+	<style>
+/*		body {width:auto;}*/
+		html {width:100%;height:100%;margin:0;padding:0;}
+		body {font-family:Muli,sans;background:black;color:white;font-size:11pt;margin:0;padding:0;cursor:pointer;}
+		#app {scrollbar-width:none;} /*firefox*/
+		::-webkit-scrollbar {
+/*			display:none;*/
+			width:2px;
+			height:2px;
+			background: transparent;
+		}
+		::-webkit-scrollbar-thumb {background: #333;}
+		abc {white-space:pre;font-size:0.7em;font-style:italic;color:#777;}
+		.abc {margin-top:20px;border-top:2px solid yellow;text-align:center;padding-top:20px;}
+		.abc svg {background:#000;display:block;}
+		.abc svg path {fill: #eee;}
+		.abc svg text {fill: #eee; font-family:'Muli'; font-weight:900;}
+		#setlist {list-style:none;padding:0;}
+		#setlist li {padding:5px 0 5px 1vw;margin:0;border:1px solid #333;cursor:pointer;}
+		#setlist li:hover {background:#311;}
+		#setlist li .name {font-size:5vh;font-weight:900;}
+		#setlist li .time {font-size:2vh;color:#444;margin:0;padding:0;line-height:2vh;}
+		#songs {
+			padding:5px;
+			box-sizing:border-box;
+		}
+		#songs.columns{
+			column-count:1000;
+			column-width: 600px;
+			column-fill:auto;
+			column-gap:10px;
+			/*height:5000px;*/
+		}
+		#songs.nocolumns {columns:initial !important;}
+		.setname {position:fixed;top:0;left:0;font-size:8px;background:black;padding:1px 3px;}
+		.song {margin-bottom:20px;border-bottom:3px solid yellow;}
+		.song h3.title {color:red;font-size:1.4em;margin-bottom:0;margin-top:15px;font-weight:900;}
+		
+		.chordbuttons {margin:10px 0;}
+		.chordbuttons button {color:black;}
+		.nashvillebutton {background:#a00;}
+		.transposebutton {background:#dd0;}
+		.capobutton {background:#faf;}
+		.bpmbutton {background:cyan;}
+		.metronomebutton {background:#00f;}
+		
+		
+		.lyrics {
+			font-family:"Nanum Gothic Coding", "Fira Sans Mono", "Roboto Mono", monospace;
+			margin:10px 5px;
+			font-weight:400;
+			letter-spacing:-0.03em;
+		}
+		.lyrics .lyric, .lyrics .comment {margin-left:10px;text-indent:-10px;}
+		.lyrics .comment {color:#faa;font-size:.9em;font-style:italic;font-family:Muli,sans;}
+		.lyrics .blank {line-height:0.5em;}
+		.lyrics .section {font-family: sans-serif; margin-top:1.2em;font-weight:900;text-transform:uppercase;color:yellow;border-bottom:1px solid #330;}
+		.lyrics .chord {color:cyan;font-weight:bold;margin-top:0.4em; white-space:pre;}
+		.lyrics .chord-group {break-inside:avoid;}
+		.lyrics .chord-group .lyric {margin-top:-2px; white-space:pre;}
+		
+		.lyrics.nocomments .comment {display:none;}
+		
+		.lyrics.nochords {font-family:Muli,sans;font-size:1.2em;font-weight:600;letter-spacing:0em;}
+		.lyrics.nochords .chord {display:none;}
+		.lyrics.nochords .chord-group {break-inside:normal;}
+		.lyrics.nochords .chord-group .lyric {margin-top:-2px; white-space:normal;}
+		
+		/* LIGHT THEME */
+		.light { color: black; background:white; }
+		.light .abc {color:black;}
+		.light .abc svg {background:white;}
+		.light .abc svg path {fill:black;}
+		.light .abc svg text {fill:black;}
+		.light #setlist li {color:blue;}
+		.light #setlist li:hover {background:yellow;}
+
+		.light .setname {background:white;color:black;}
+		.light .song h3.title {color: #38a;}
+		.light .song {border-bottom: 50px solid #eee;}
+		.light .lyrics .comment {color:#b77}
+		.light .lyrics .chord {color:red;}
+		.light .lyrics .section {color:#359;}
+		/* END LIGHT THEME */
+		
+		.legal {
+			font-style:italic;
+			font-size:.8em;
+			margin-top:30px;
+			color: #777;
+			text-align:center;
+			border-top:1px solid;
+		}
+		
+		button {background:#333;border:none;outline:none;color:#777;font-size:14px;font-weight:900;text-transform:uppercase;margin:0 1px;}
+		button.active {background:#f11;color:black;}
+		button:focus {outline:none;}
+		button.dense {padding: 5px 5px;}
+
+		#buttons {position:fixed;bottom:0;right:0;font-size:14px;font-weight:900;}
+		#buttons button {padding: 5px 10px;}
+		
+		#nav-buttons button {cursor:pointer;font-size:50px;font-weight:700;color:rgba(255,255,255,.1);background:none;border:none;outline:none;}
+		#nav-buttons button.prev {position:fixed;left:0;top:50%;}
+		#nav-buttons button.next {position:fixed;right:0;top:50%;}
+		#nav-buttons button.all {position:fixed;left:50%;top:50%;}
+		#debug {position:fixed;top:0;right:0;}
+		
+		#flasher-bar {position:fixed; z-index:-99;height:26px;width:100%;bottom:0;}
+		#flasher-bar #dot {position:relative;top:0;height:26px;width:26px;visibility:hidden;background:green;}
+		#flasher {background:yellow;width:100%;height:26px;position:fixed;z-index:-98;bottom:0;left:0;opacity:0;transition:opacity 0.0s;}
+		#flasher.will-fade-in {transition:opacity 0.0s;}
+		#flasher.will-fade-out {transition:opacity 0.1s;}
+		#flasher.in {opacity:1;}
+	</style>
+
+</head>
+<!-- body needs an empty onclick to trigger click events on ios which we set later -->
+<!-- https://makandracards.com/makandra/34753-how-to-fix-ipad-does-not-trigger-click-event-on-some-elements -->
+<body onclick="">
+	<div id="flasher-bar" class="">
+		<div id="flasher" class=""></div>
+		<div id="dot">&nbsp;</div>
+	</div>
+	<div id="app" :style="{fontSize: fontSize + 'px'}" :class="theme">
+		<div id="debug">{{debug}}</div>
+		<ul v-if="!current_set" id="setlist">
+			<h3>Choose A Set</h3>
+			<li v-for="set in sets" @click="selectSet(set.name)">
+				<span class="time">({{set.time|niceTime}})</span><br />
+				<span class="name">{{set.name}}</span>
+			</li>
+		</ul>
+		<div id="setbox" v-if="current_set">
+			<div class="setname">Current Set: {{current_set.name}} :: {{song_number}}</div>
+			<div id="songs" :class="{nocolumns: !columns, columns: columns}">
+				<div class="song" v-for="song in current_songs">
+					<h3 class="title">{{song.title|cleantitle}}</h3>
+					<div v-if="showchords">
+						<div class="songmeta">
+							<span v-if="song.key">[ KEY: {{song | transposed_key}} <small v-if="song.transpose > 0">({{song.transpose | nice_transpose}}) </small>]</span>
+							<span v-if="song.capo">[ CAPO: {{song | capo_key}} <small v-if="song.capo > 0">({{song.capo}}) </small>]</span>
+							<span v-if="song.bpm">[ BPM: {{song.bpm}} ]</span>
+							<!-- <span v-if="song.transpose > 0"></span> -->
+						</div>
+						<div v-if="song.key" class="chordbuttons">
+							<button class="transposebutton" @click="transpose(song, -1)">–</button>
+							<button class="transposebutton" @click="transpose(song, 1)">+</button>
+							<button class="nashvillebutton" :class="{active:nashville}" @click="nashville = !nashville">#</button>
+							<button class="capobutton" @click="capo(song, -1)">–</button>
+							<button class="capobutton" @click="capo(song, 1)">+</button>
+							<button class="metronomebutton" :class="{active:metronome_playing}" @click="toggle_metronome(song)">M</button>
+							<button class="bpmbutton" @click="bpm(song, -1)">–</button>
+							<button class="bpmbutton" @click="bpm(song, 1)">+</button>
+						</div>
+					</div>
+					<div class="lyrics" :class="{nochords:!showchords,nocomments:!showcomments}" v-html="lyric_html(song)"></div>
+					<div class="abc" v-html="abc_svg(song)" v-if="song.abc && showchords"></div>
+					<div class="legal">
+						<div class="author">{{song.author}}</div>
+						<div class="copyright">{{song.copyright}}</div>
+						<div class="ccli" v-if="song.ccli">#{{song.ccli}}</div>
+					</div>
+				</div>
+			</div>
+			<div id="buttons">
+				<button :class="" @click="deselectSet">SETS</button>
+				<button :class="{active:showchords}" @click="showchords = ! showchords">chords</button>
+				<button class="dense" style="width:30px" @click="showcomments = !showcomments">//</button>
+				<button @click="addColumn(1)">{{col_btn_label}}</button>
+				<button class="dense" @click="fontSize = 18">FONT</button>
+				<button class="dense" style="width:30px" @click="fontUp()">+</button>
+				<button class="dense" style="width:30px" @click="fontDown()">-</button>
+				
+				<!-- <button v-else @click="showchords = ! showchords">chords</button> -->
+				
+				<!--
+				<button @click="prev">Previous</button>
+				<button @click="all">All</button>
+				<button @click="next">Next</button>
+				-->
+			</div>
+			<div v-if="allownav" id="nav-buttons">
+				<button class="prev" @click="prev">←</button>
+				<button class="all" @click="all">&loz;</button>
+				<button class="next" @click="next">→</button>
+			</div>
+		</div>
+	</div>
+	<script>
+		// fixing audioContext naming
+		window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
+		let metronome_playing = false;
+		let metronome_timer;
+		let next_click = 0;
+		let last_click = 0;
+		let do_dot = false;
+		let dot_timer;
+		let dot_rightward = true;
+		let dot_width = 26;
+		let dot_max;
+		let dot = document.getElementById('dot'); // created outside of Vue, so it's safe to setup here
+		let clickBuffer;
+		let audioContext;
+		let audioSource;
+		let bpm = 1;
+		let flasher;
+		
+		const endpoint = '';
+		const chordletters = 'A A# B C C# D D# E F F# G G# A Bb B C Db D Eb E F Gb G Ab'.split(' ');
+		const scale_colors = ['','m','m','','','m','dim'];
+		const semitones_to_nashville = {
+			0: 1,
+			2: 2,
+			4: 3,
+			5: 4,
+			7: 5,
+			9: 6,
+			11: 7
+		};
+		
+		window.addEventListener("resize", doResize);
+		window.addEventListener("load", doResize);
+		
+		function loadClick(callback) {
+			audioContext = new AudioContext();
+			var req = new XMLHttpRequest();
+			req.open('GET', './static/click.wav', true);
+			req.responseType = 'arraybuffer';
+			// Decode asynchronously
+			req.onload = function() {
+				audioContext.decodeAudioData(req.response, function(buffer) {
+					clickBuffer = buffer;
+					if (callback) callback();
+				}, ()=>{});
+			}
+			req.send();
+		}
+		
+		function stopMetronome() {
+			metronome_playing = false;
+			if (do_dot) dot.style.visibility = 'hidden';
+			// clearTimeout(metronome_timer);
+			// clearTimeout(dot_timer);
+		}
+		
+		function startMetronome(newbpm) {
+			metronome_playing = true;
+			
+			if (newbpm) bpm = newbpm;
+			
+			if (audioContext == null) loadClick(function(){startMetronome()});
+			else {
+				next_click = Date.now();
+				if (do_dot) dot.style.visibility = 'visible';
+				metronomeLoop();
+			}
+		}
+		
+		function metronomeLoop() {
+			if (bpm <= 0) bpm = 12;
+			if (!metronome_playing) return;
+			
+			let now = Date.now();
+			let click_delay = 1000 * 60 / bpm;
+			
+			// handle the dot first
+			if (do_dot) {
+				let time_till_click = next_click - now;
+				let delay_so_far = click_delay - time_till_click;
+				let dot_ratio = delay_so_far / click_delay;
+				let dotpos = dot_max * dot_ratio;
+				if (!dot_rightward) dotpos = dot_max - dotpos;
+				if (dotpos < 0) {
+					dotpos = 0;
+					dot_rightward = true;
+				} else if (dotpos > dot_max) {
+					dotpos = dot_max;
+					dot_rightward = false;
+				}
+				dot.style.left = dotpos + 'px';
+			}
+			
+			// handle audio clicks
+			if (now > next_click || now > (last_click + click_delay)) {
+				doClick();
+				last_click = next_click;
+				next_click = last_click + click_delay;
+			}
+			
+			window.requestAnimationFrame(metronomeLoop);
+		}
+		
+		// function scheduleClick(lasttime=null) {
+		// 	if (bpm <= 0) bpm = 12;
+		// 	if (lasttime == null) lasttime = Date.now();
+		// 	next_click = lasttime + 1000 * 60 / bpm;
+		// 	last_click = lasttime;
+		//
+		// 	clearTimeout(metronome_timer);
+		//
+		// 	// wait until next_click time and then
+		// 	// do a click and schedule the next one
+		// 	metronome_timer = setTimeout(()=>{
+		// 		doClick();
+		// 		scheduleClick(lasttime)
+		// 	}, next_click - lasttime);
+		// }
+		//
+		// function doDot(timestamp) {
+		// 	if (metronome_playing) {
+		// 		window.requestAnimationFrame(function(){doDot()});
+		// 		let now = Date.now();
+		// 		console.log('date.now ' + Date.now());
+		// 		console.log('now ' + now)
+		// 		console.log('next_click ' + next_click)
+		// 		console.log('next_click ' + window.next_click)
+		// 		if (now > next_click) now = next_click;
+		// 		let dot_ratio = (next_click - now) / (next_click - last_click);
+		// 		let dotpos = dot_max * dot_ratio;
+		// 		if (!dot_rightward) dotpos = dot_max - dotpos;
+		// 		if (dotpos < 0) {
+		// 			dotpos = 0;
+		// 			dot_rightward = true;
+		// 		} else if (dotpos > dot_max) {
+		// 			dotpos = dot_max;
+		// 			dot_rightward = false;
+		// 		}
+		// 		dot.style.left == dotpos + 'px';
+		// 	} else {
+		// 		dot.style.visibility = 'hidden';
+		// 	}
+		// }
+		
+		function doClick() {
+			doFlash();
+			let audioSource = audioContext.createBufferSource();
+			audioSource.buffer = clickBuffer;
+			audioSource.connect(audioContext.destination);
+			audioSource.start(0)
+		}
+		
+		function doFlash() {
+			if (!flasher) flasher = document.getElementById('flasher');
+			flasher.classList.add('in');
+			setTimeout(()=>{
+				flasher.classList.add('will-fade-out');
+				flasher.classList.remove('in');
+			},100);
+			setTimeout(()=>{
+				flasher.classList.remove('will-fade-out');
+			},400);
+		}
+		
+		function doResize() {
+			console.log('doing resize');
+			var el = document.getElementById('songs')
+			if (el) {
+				document.body.style.height = '1px';
+				if (!app.columns || app.columns == 1) {
+					el.style.height = "";
+					el.style.columnWidth="";
+				} else {
+					let colwidth;
+					el.style.height = `${window.innerHeight - 40}px`;
+					colwidth = window.innerWidth / (app.columns + .5);
+					el.style.columnWidth = `${colwidth}px`;
+				}
+			}
+			// change the maximum value of the metronome dot
+			dot_max = window.innerWidth - dot_width;
+		}
+		
+		function Song() {
+			return {
+				path: '',
+				title: '',
+				author: '',
+				ccli: '',
+				copyright: '',
+				key: '',
+				presentation: '',
+				lyrics: ''
+			}
+		}
+		
+		function Set() {
+			return {
+				path: '',
+				name: '',
+				songs: []
+			}
+		}
+		
+		var app = new Vue({
+			el: '#app',
+			data: {
+				sets: [],
+				current_set: false,
+				current_song: null,
+				showall: false,
+				allownav: true,
+				theme: 'dark',
+				showchords: true,
+				showcomments: true,
+				columns: false,
+				fontSize:12,
+				debug:'',
+				nashville: false,
+				metronome_playing: false,
+			},
+			computed: {
+				current_songs: function() {
+					if (this.current_set == false || this.current_set == null) return [];
+					if (this.current_song == null || this.showall) return this.current_set.songs;
+					else return [this.current_set.songs[this.current_song]];
+				},
+				col_btn_label: function() {
+					if (this.columns) return `${this.columns} COLS`;
+					return '1 COL';
+				},
+				song_number() {
+					if (this.current_song == null || this.showall) return 'ALL SONGS';
+					else return `SONG #${this.current_song + 1} / ${this.current_set.songs.length}`;
+				},
+			},
+			filters: {
+				nice_transpose: function(num) {
+					if (num <= 6) return `+${num}`;
+					else return `-${12 - num}`;
+				},
+				transposed_key: function(song) {
+					let note_index = chordletters.indexOf(song.key);
+					if (note_index == -1) return song.key;
+					let target_key_index = (note_index + song.transpose) % 12;
+					if (target_key_index != 9) target_key_index += 12;
+					return chordletters[target_key_index];
+				},
+				capo_key: function(song) {
+					let note_index = chordletters.indexOf(song.key);
+					if (note_index == -1) return song.key;
+					let target_key_index = (note_index + song.transpose + 36 - song.capo) % 12;
+					if (target_key_index != 9) target_key_index += 12;
+					return chordletters[target_key_index];
+				},
+				niceTime: function(i) {
+					let d = new Date(i);
+					return `${d.toDateString()}`;
+				},
+				cleantitle: function(s) {
+					return s.replace(/\s*=+\s*/g, '');
+				},
+			},
+			methods: {
+				all() {
+					this.showall = true;
+					if (this.current_song == null) this.current_song = 0;
+					else this.current_song = null;
+				},
+				prev() {
+					if (!this.allownav) return;
+					window.scrollTo(0,0);
+					this.showall = false;
+					this.current_song = (this.current_song == null)
+						? this.current_set.songs.length - 1
+						: (this.current_song+this.current_set.songs.length-1) % this.current_set.songs.length;
+				},
+				next() {
+					if (!this.allownav) return;
+					window.scrollTo(0,0);
+					this.showall = false;
+					this.current_song = (this.current_song == null)
+						? 1
+						: (this.current_song+1) % this.current_set.songs.length;
+				},
+				selectSong(n) {
+					if (!this.allownav) return;
+					if (n <= 0) n = 1;
+					if (n <= this.current_set.songs.length) this.current_song = n-1;
+				},
+				tap(e) {
+					if (e.target.tagName == 'BUTTON' || e.target.tagName == 'A') return;
+					if (!this.current_set || !this.allownav) return;
+					if (e.clientY > window.innerHeight / 10 && e.clientY < window.innerHeight * 9 / 10) {
+						let x = e.clientX
+						let thirdx = window.innerWidth / 3;
+						if (x < thirdx) this.prev();
+						else if (x > window.innerWidth-thirdx) this.next();
+						else this.all();
+					}
+				},
+				getSets() {
+					let url = `${endpoint}/Sets`;
+					this.debug = 'loading';
+					axios.get(url)
+					.then((res)=>{
+						console.log(res)
+						// Vue.set(this,'sets',res.data.files);
+						this.sets = res.data.files;
+						this.sets.sort((a,b)=>b.time - a.time);
+						this.debug = '';
+					})
+					.catch((err)=>{
+						console.log(err)
+					})
+				},
+				deselectSet() {
+					this.current_set=false;
+					this.getSets();
+					window.history.pushState('','','#');
+				},
+				selectSet(set_name) {
+					window.history.pushState(set_name,set_name,`#${encodeURI(set_name)}`);
+					this.getSet(set_name);
+				},
+				getSet(set_name) {
+					let url = `${endpoint}/Sets/${set_name}`;
+					this.debug = 'loading';
+					axios.get(url)
+					.then((res)=>{
+						console.log(res)
+						// let newSet = Set();
+						let songs = res.data.songs;
+						
+						// load set-specific transpose and capo settings
+						for (var i = 0; i<songs.length; i++) {
+							let song = songs[i];
+							song.transpose = 0;
+							song.capo = 0;
+							song.bpm = song.bpm ? song.bpm : 140;
+							// for "blank" songs
+							if (!song.key) song.bpm = 1;
+							
+							
+							let id = `${res.data.path}-${i}-${song.path}-transpose`
+							let t = localStorage.getItem(id);
+							if (t !== null) song.transpose = (1 * t);
+							
+							id = `${res.data.path}-${i}-${song.path}-capo`
+							t = localStorage.getItem(id);
+							if (t !== null) song.capo = (1 * t);
+
+							id = `${res.data.path}-${i}-${song.path}-bpm`
+							t = localStorage.getItem(id);
+							if (t !== null) song.bpm = (1 * t);
+						}
+						
+						this.current_set = res.data;
+						this.current_song = 0;
+						this.debug = '';
+					})
+					.catch((err)=>{
+						console.log(err)
+					})
+				},
+				transpose(song, inc) {
+					if (!song.transpose) song.transpose = 0;
+					song.transpose = (24 + inc + song.transpose) % 12; // ensure we mod positive numbers
+					console.log(song);
+					this.save();
+				},
+				capo(song, inc) {
+					if (!song.capo) song.capo = 0;
+					song.capo = (24 + inc + song.capo) % 12; // ensure we mod positive numbers
+					console.log(song);
+					this.save();
+				},
+				bpm(song, inc) {
+					if (!song.bpm) song.bpm = 140;
+					song.bpm = inc + song.bpm;
+					bpm = song.bpm; // change the global bpm too
+					console.log(song);
+					this.save();
+				},
+				addColumn() {
+					if (this.columns===false) this.columns = 2;
+					else this.columns = (this.columns + 1) % 5;
+					if (this.columns == 0 || this.columns == 1) this.columns = false;
+					doResize();
+				},
+				fontUp() {
+					// this.fontSize = (this.fontSize * 1.2) << 0;
+					this.fontSize++;
+				},
+				fontDown() {
+					// this.fontSize = (this.fontSize * 0.9) << 0;
+					this.fontSize--;
+				},
+				abc_svg(song) {
+					if (song.abc != '') return render_abc(song.abc);
+					return '';
+				},
+				lyric_html(song) {
+					let html = '';
+					let transpose = song.transpose ? song.transpose : 0;
+					let capo = song.capo ? song.capo : 0;
+					let lines = song.lyrics.split('\n');
+					
+					// set up chord search regex
+					let cs = /(([ABCDEFG][b#]?)(m(?!a))?[^\s\/]*)(\/?)/g; // chords need whitespace or slash at end
+					
+					if (transpose > 0 || capo > 0 || this.nashville) {
+						let realtranspose = transpose - capo + 36; // capo can be anywhere on the neck and might make transpose negative
+						
+						let key_index = chordletters.indexOf(song.key)
+						if (key_index == -1) key_index = 0;
+						let sourceflats = key_index > 11;
+
+						let target_key_index = (key_index + realtranspose) % 12;
+						if (target_key_index != 9) target_key_index += 12;
+						let target_key = chordletters[target_key_index];
+						let targetflats = target_key.search(/^F$|^.b$/) != -1;
+
+						// replace all source chords with target chords
+						let m;
+						let transposed = [];
+						for (let line of lines) {
+							let transposed_line = '';
+							if (line.search(/^\./) == -1) {
+								transposed_line = line;
+							} else {
+								let cursor = 0;
+								cs.lastIndex = 0;
+								let next_chord_is_bass = false;
+								while (1) {
+									m = cs.exec(line);
+									if (!m) {
+										transposed_line += line.substring(cursor);
+										break;
+									}
+									
+									let match = m[0];
+									let cname = m[1]; // the full chord Ebmaj7
+									let source_chord = m[2]; // just the rank, Ab, etc.
+									let chord_index = chordletters.indexOf(source_chord);
+									let has_bass = (m[4] == '/');
+									
+									let target_chord;
+									if (this.nashville) {
+										let semitones = (chord_index + 24 - key_index) % 12;
+										target_chord = semitones_to_nashville[semitones] + '-';
+									} else {
+										let target_index = (chord_index + realtranspose) % 12;
+										if (targetflats) target_index += 12;
+										target_chord = chordletters[target_index];
+									}
+									
+									let full_chord = cname.replace(source_chord, target_chord);
+									
+									// get everything from the last cursor to before this chord
+									let chord_position = cs.lastIndex - match.length;
+									transposed_line += line.substring(cursor, chord_position);
+									
+									// is this line as long as it should be?
+									let correct_length = cs.lastIndex - match.length;
+									while (!next_chord_is_bass && transposed_line.length < correct_length) {
+										transposed_line += ' ';
+									}
+									
+									// replace the chord itself
+									transposed_line += full_chord;
+									if (has_bass) transposed_line += '/';
+									next_chord_is_bass = has_bass;
+									
+									cursor = cs.lastIndex;
+									// if (full_chord.length > cname.length) cursor += full_chord.length - cname.length;
+								}
+							}
+							// clean trailing '-' from nashville chords
+							if (this.nashville) transposed_line = transposed_line.replace(/-([^\d])|-$/g, '$1')
+							transposed.push(transposed_line)
+						}
+						lines = transposed;
+					}
+					
+					// process all lyric lines
+					let chordline = '';
+					let usedchords = true;
+					let i = 0;
+					while (i < lines.length) {
+						let line = lines[i]
+						let char = line.substring(0,1)
+						line = line.substring(1)
+						
+						let classname = ''
+						switch (char) {
+						case '.':
+							// did we already have a chord line in the buffer
+							// if so, dump that one first
+							if (!usedchords && chordline != '') {
+								html += `<div class="chord">${chordline}</div>`;
+							}
+							classname = 'chord';
+							chordline = line;
+							if (chordline == '') chordline = ' ';
+							usedchords = false;
+							break;
+						case ' ':
+							// only flag a line as a lyric line if it
+							// actually has lyric content
+							if (!line.match(/^\s*$/))
+								classname = 'lyric';
+							break;
+						case ';':
+							classname = 'comment';
+							if (usedchords) chordline = '';
+							line = line.replace(/(https?:[^ ]*)/,'<a href="$1">$1</a>')
+							break;
+						case '[':
+							classname = 'section';
+							if (usedchords) chordline = '';
+							line = line.substr(0,line.length - 1)
+							line = line.replace(/^p(\d*)$/i, 'Pre Chorus $1')
+							line = line.replace(/^v(\d*)$/i, 'Verse $1')
+							line = line.replace(/^c(\d*)$/i, 'Chorus $1')
+							line = line.replace(/^b(\d*)$/i, 'Bridge $1')
+							line = line.replace(/^i(\d*)$/i, 'Instrumental $1')
+							line = line.replace(/^t(\d*)$/i, 'Tag $1')
+							break;
+						case '-':
+							if (usedchords) chordline = '';
+							line = '';
+							break;
+						}
+						
+						switch (classname) {
+						case 'chord':
+							break;
+						case 'lyric':
+							// if we aren't showing chords, replace all extra whitespace
+							if (!this.showchords) {
+								line = line.replace(/^\s+/g,'');
+								line = line.replace(/\s+/g,' ');
+								line = line.replace(/\s+-\s+/g, '');
+							}
+							if (!line.match(/^\s*$/)) {
+								if (!usedchords || (chordline && !chordline.match(/^\s*$/))) {
+									html += `<div class="chord-group">`;
+									html += `<div class="chord">${chordline}</div>`;
+									html += `<div class="lyric">${line}</div>`;
+									html += `</div>`;
+									usedchords = true;
+								}
+								else {
+									html += `<div class="lyric">${line}</div>`;
+								}
+							}
+							else {
+							}
+							break;
+						default:
+							if (chordline && !usedchords)
+							{
+								html += `<div class="chord">${chordline}</div>`;
+								usedchords = true;
+							}
+							if (classname){
+								html += `<div class="${classname}">${line}</div>`;
+							}
+							else {
+								html += `<div class="blank">&nbsp;</div>`;
+							}
+						}
+						i++;
+					}
+					// do we have an unused chord line?
+					if (chordline && ! usedchords)
+						html += `<div class="chord">${chordline}</div>`;
+						
+					return html
+				},
+				save() {
+					// general settings
+					let settings = {
+						fontSize: this.fontSize,
+						showchords: this.showchords,
+						columns: this.columns,
+						nashville: this.nashville,
+					}
+					localStorage.setItem('settings', JSON.stringify(settings));
+					
+					// set-specific transpose settings
+					if (this.current_set) {
+						for (var i = 0; i<this.current_set.songs.length; i++) {
+							let song = this.current_set.songs[i];
+							let id = `${this.current_set.path}-${i}-${song.path}-transpose`
+							localStorage.setItem(id, song.transpose);
+							
+							id = `${this.current_set.path}-${i}-${song.path}-capo`
+							localStorage.setItem(id, song.capo);
+
+							id = `${this.current_set.path}-${i}-${song.path}-bpm`
+							localStorage.setItem(id, song.bpm);
+						}
+					}
+					
+				},
+				loadSettings() {
+					let res = localStorage.getItem('settings');
+					if (res) {
+						try {
+							res = JSON.parse(res);
+						} catch (e) {
+							return;
+						}
+						this.fontSize = res.fontSize ? res.fontSize : this.fontSize;
+						this.showchords = res.showchords ? res.showchords : this.showchords;
+						this.columns = res.columns ? res.columns : this.columns;
+						this.nashville = res.nashville ? res.nashville : this.nashville;
+					}
+				},
+				hashCheck() {
+					if (window.location.hash.length > 1) {
+						let hashdata = window.location.hash.replace('#','').split(',')
+						let set_name = '';
+						for (let v of hashdata) {
+							switch (v) {
+								case 'nochords':
+									this.showchords = false;
+									break;
+								case 'showall':
+									this.showall = true;
+									break;
+								case 'nonav':
+									this.showall = true;
+									this.allownav = false;
+									break;
+								case 'nocomments':
+									this.showcomments = false;
+									break;
+								case 'light':
+									this.theme = 'light'
+									break;
+								case 'dark':
+									this.theme = 'dark'
+									break;
+								default:
+									set_name = v;
+							}
+						}
+						this.getSet(set_name);
+					}
+					else {
+						this.current_set = false;
+					}
+				},
+				toggle_metronome(song) {
+					if (metronome_playing) stopMetronome();
+					else {
+						if (!song && this.current_songs.length > 0) song = this.current_songs[0];
+						if (!song) return;
+						startMetronome(song.bpm);
+					}
+					this.metronome_playing = metronome_playing;
+				}
+			},
+			created: function(){
+				this.loadSettings();
+				this.getSets();
+				
+				this.hashCheck();
+				window.addEventListener('popstate', (e)=>{this.current_set = false});
+				
+				if (this.allownav) {
+					document.body.addEventListener("tap", (e)=>{this.tap(e);e.stopPropagation();});
+					document.body.addEventListener("click", (e)=>{this.tap(e);e.stopPropagation();});
+				}
+				
+				window.addEventListener('keydown', (e)=>{
+					// ignore repeated keys
+					if (e.repeat) return;
+					
+					console.log(e.keyCode);
+					switch (e.keyCode) {
+					case 32:
+					case 39:
+						if (this.allownav) this.next();
+						break;
+					case 37:
+						if (this.allownav) this.prev();
+						break;
+					case 77:
+						this.toggle_metronome();
+						break;
+					default:
+						if (e.keyCode >= 48 && e.keyCode <= 57) {
+							if (this.allownav) this.selectSong(e.keyCode - 48);
+						}
+					}
+				});
+			},
+			updated: function() {
+				// update the global metronome bpm
+				if (this.current_songs && this.current_songs.length > 0 && this.current_songs[0].bpm > 0) bpm = this.current_songs[0].bpm;
+				doResize();
+				this.save();
+				// this.debug = `${window.innerHeight} / ${window.outerHeight}`;
+			}
+		});
+		
+		/* SETUP ABC CONVERSION */
+		/* ** TRYING TO USE abc2svg ** */
+		// var abc, svg_accumulator, syms;
+		// var abc_options = {
+		// 	read_file: function(fn) {},
+		// 	errbld: function(){},
+		// 	img_out: function(str) {
+		// 		svg_accumulator += str
+		// 	},
+		// 	anno_stop: function(type, start, stop, x, y, w, h, s) {
+		// 		if (["beam", "slur", "tuplet"].indexOf(type) >= 0)
+		// 			return
+		// 		syms[start] = s
+		// 		abc.out_svg('<rect class="abcr _' + start + '_" x="');
+		// 		abc.out_sxsy(x, '" y="', y);
+		// 		abc.out_svg('" width="' + w.toFixed(2) + '" height="' + abc.sh(h).toFixed(2) + '"/>\n')
+		// 	},
+		// 	page_format: true
+		// }
+		// abc = new abc2svg.Abc(abc_options);
+		// function render_abc(content) {
+		// 	// until this actually works, we just output raw text
+		// 	return '<abc>' + content + '</abc>';
+		//
+		// 	syms = []
+		// 	svg_accumulator = '';
+		// 	// abc.tosvg('edit', '%%fullsvg x\n%%pagewidth 12cm\n%%bgcolor white\n%%topspace 0\n%%composerspace 0\n%%leftmargin 0.2cm\n%%rightmargin 0.2cm');
+		// 	try {
+		// 		let header = '%%fullsvg x\n%%pagewidth 12cm\n%%bgcolor white\n%%topspace 0\n%%composerspace 0\n%%leftmargin 0.2cm\n%%rightmargin 0.2cm\n'
+		// 		abc.tosvg('noname.abc', header + content)
+		// 	} catch (e) {
+		// 		alert(e.message + '\nabc2svg tosvg bug - stack:\n' + e.stack)
+		// 		return
+		// 	}
+		// 	return svg_accumulator;
+		// }
+
+		function render_abc(content) {
+			var html = '';
+			try {
+				// to render multiple tunes, we have multiple objects
+				var els = [];
+				var midiels = [];
+				for (var i=0;i<10;i++) {els.push(document.createElement('div'));midiels.push(document.createElement('div'));}
+				// until this actually works, we just output raw text
+				// return '<abc>' + content + '</abc>';
+				ABCJS.renderAbc(els, content, {
+					scale: .8,
+					staffwidth: 350,
+					paddingtop: 0,
+					paddingbottom: 0,
+					paddingright: 0,
+					paddingleft: 0,
+					// responsive: "resize",
+				});
+				// ABCJS.renderMidi(midiels, content);
+				for (var el of els) html += el.innerHTML;
+				for (var el of midiels) html += el.innerHTML;
+				delete(els);
+				delete(midiels);
+			} catch (e) {
+				html = `<pre>${content}</pre>`;
+			}
+			return html;
+		}
+	</script>
+</body>
+</html>
