@@ -14,7 +14,7 @@ const WebSocket = require("ws");
 
 // remember the trailing slash here
 const openSongDir = config.openSongDir;
-const serverRoot = config.serverRoot;
+const serverBasePath = config.serverBasePath;
 
 // SET UP LOGGING TO CONSOLE AND ALSO TO FILE
 const log_file = fs.createWriteStream(__dirname + "/debug.log", { flags: "a" });
